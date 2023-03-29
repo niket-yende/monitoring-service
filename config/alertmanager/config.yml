@@ -1,0 +1,21 @@
+route:
+  receiver: 'mail'
+  # repeat_interval: 4h
+  # group_by: [ alertname ]
+
+receivers:
+  - name: 'mail'
+    email_configs:
+      - smarthost: 'smtp.gmail.com:465'
+        auth_username: ${EMAIL_AUTH_USERNAME}
+        # add app specific password if 2 factor auth is on
+        auth_password: ${EMAIL_AUTH_PASSWORD}
+        from: ${EMAIL_FROM_ADDRESS}
+        to: ${EMAIL_TO_ADDRESS}
+        headers:
+          subject: '{{ template "email.default.subject" . }}'
+        html: '{{ template "email.default.html" . }}'
+        require_tls: false
+
+templates:
+- '/etc/alertmanager/templates/email.tmpl'
