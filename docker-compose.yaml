@@ -4,6 +4,8 @@ services:
   mongodb:
     image: mongo:6-jammy
     container_name: mongodb
+    hostname: mongodb
+    command: mongod --auth --bind_ip_all
     env_file: [./config/mongodb/.env, ./config/mongodb/.env-exporter]
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
@@ -19,10 +21,10 @@ services:
         ipv4_address: 172.29.0.2
 
   mongodb-exporter:
-    image: percona/mongodb_exporter:0.20
+    image: percona/mongodb_exporter:2.35.0
     container_name: mongodb-exporter
     command:
-      - '--mongodb.uri=mongodb://exporter:password@172.29.0.2:27017/admin?ssl=false'
+      - '--mongodb.uri=mongodb://exporter:password@mongodb:27017/admin?ssl=false'
     ports:
       - 9216:9216
     restart: unless-stopped
