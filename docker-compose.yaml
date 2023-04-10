@@ -1,38 +1,140 @@
 version: '3.7'
 
 services:
-  mongodb:
+  mongodb1:
     image: mongo:6-jammy
-    container_name: mongodb
-    hostname: mongodb
-    command: mongod --auth --bind_ip_all
-    env_file: [./config/mongodb/.env, ./config/mongodb/.env-exporter]
+    command: mongod --replSet rs0 --auth --bind_ip_all --keyFile /data/replica.key
+    container_name: mongodb1
+    hostname: mongodb1
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
-    ports:
-      - 27017:27017
+      - MONGO_INITDB_DATABASE=dbname
+      - MONGO_REPLICA_SET_NAME=rs0
+      - MONGO_SECONDARY_HOSTNAME=mongodb1
     volumes:
-      - dbdata:/data/db
+      - mongo1:/data/db
+      - ./config/mongodb/replica.key.devel:/data/replica.key.devel
       - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
-    restart: unless-stopped
+      - ./config/mongodb/rs-init.sh:/scripts/rs-init.sh
+    links:
+      - mongodb2
+      - mongodb3
+    entrypoint:
+      - bash
+      - -c
+      - |
+          chmod 777 /scripts/rs-init.sh
+          cp /data/replica.key.devel /data/replica.key
+          chmod 400 /data/replica.key
+          chown 999:999 /data/replica.key
+          exec docker-entrypoint.sh $$@ 
+    ports:
+      - "27097:27017"
     networks:
       monitor-network:
         ipv4_address: 172.29.0.2
+  
+  mongodb2:
+    image: mongo:6-jammy
+    command: mongod --replSet rs0 --auth --bind_ip_all --keyFile /data/replica.key
+    container_name: mongodb2
+    hostname: mongodb2
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_REPLICA_SET_NAME=rs0
+      - MONGO_SECONDARY_HOSTNAME=mongodb2
+    volumes:
+      - mongo2:/data/db
+      - ./config/mongodb/replica.key.devel:/data/replica.key.devel
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    entrypoint:
+      - bash
+      - -c
+      - |
+          cp /data/replica.key.devel /data/replica.key
+          chmod 400 /data/replica.key
+          chown 999:999 /data/replica.key
+          exec docker-entrypoint.sh $$@ 
+    ports:
+      - "27098:27017"
+    networks:
+      monitor-network:
+        ipv4_address: 172.29.0.3
+
+  mongodb3:
+    image: mongo:6-jammy
+    command: mongod --replSet rs0 --auth --bind_ip_all --keyFile /data/replica.key
+    container_name: mongodb3
+    hostname: mongodb3
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_REPLICA_SET_NAME=rs0
+      - MONGO_SECONDARY_HOSTNAME=mongodb3
+    volumes:
+      - mongo3:/data/db
+      - ./config/mongodb/replica.key.devel:/data/replica.key.devel
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    entrypoint:
+      - bash
+      - -c
+      - |
+          cp /data/replica.key.devel /data/replica.key
+          chmod 400 /data/replica.key
+          chown 999:999 /data/replica.key
+          exec docker-entrypoint.sh $$@ 
+    ports:
+      - "27099:27017"
+    networks:
+      monitor-network:
+        ipv4_address: 172.29.0.4
 
   mongodb-exporter:
     image: percona/mongodb_exporter:2.35.0
     container_name: mongodb-exporter
-    command:
-      - '--mongodb.uri=mongodb://exporter:password@mongodb:27017/admin?ssl=false'
+    command: --mongodb.uri mongodb://exporter:password@mongodb1:27017/admin?replicaSet=rs0&ssl=false&tls=false
     ports:
-      - 9216:9216
-    restart: unless-stopped
+      - "9216:9216"
     depends_on:
-      - mongodb
+      - mongodb1
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.3
+        ipv4_address: 172.29.0.5
+  
+  # mongodb:
+  #   image: mongo:6-jammy
+  #   container_name: mongodb
+  #   hostname: mongodb
+  #   command: mongod --auth --bind_ip_all
+  #   env_file: [./config/mongodb/.env, ./config/mongodb/.env-exporter]
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=root
+  #     - MONGO_INITDB_ROOT_PASSWORD=root
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - dbdata:/data/db
+  #     - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+  #   restart: unless-stopped
+  #   networks:
+  #     monitor-network:
+  #       ipv4_address: 172.29.0.2
+
+  # mongodb-exporter:
+  #   image: percona/mongodb_exporter:2.35.0
+  #   container_name: mongodb-exporter
+  #   command:
+  #     - '--mongodb.uri=mongodb://exporter:password@mongodb:27017/admin?ssl=false'
+  #   ports:
+  #     - 9216:9216
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - mongodb
+  #   networks:
+  #     monitor-network:
+  #       ipv4_address: 172.29.0.3
   
   prometheus:
     image: "prom/prometheus"
@@ -51,7 +153,7 @@ services:
       - alertmanager
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.4
+        ipv4_address: 172.29.0.6
 
   grafana:
     image: "grafana/grafana"
@@ -69,7 +171,7 @@ services:
     restart: unless-stopped
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.5
+        ipv4_address: 172.29.0.7
 
   alertmanager:
     image: prom/alertmanager
@@ -86,7 +188,7 @@ services:
     restart: unless-stopped
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.6
+        ipv4_address: 172.29.0.8
   
   node-exporter:
     image: prom/node-exporter
@@ -105,7 +207,7 @@ services:
     restart: unless-stopped
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.7
+        ipv4_address: 172.29.0.9
 
   redis:
     image: redis:6.2.6
@@ -119,13 +221,14 @@ services:
       - cache:/data
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.8
+        ipv4_address: 172.29.0.10
 
   redis-exporter:
     image: bitnami/redis-exporter
     container_name: redis-exporter
     command:
-      - '--redis.addr=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@172.29.0.8:6379'
+      - '--redis.addr=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@172.29.0.10:6379'
+      - '--include-system-metrics'
     ports:
       - 9121:9121
     restart: unless-stopped
@@ -133,7 +236,7 @@ services:
       - redis
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.9
+        ipv4_address: 172.29.0.11
 
   cadvisor:
     image: google/cadvisor:latest
@@ -147,7 +250,7 @@ services:
       - 8090:8080/tcp
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.10
+        ipv4_address: 172.29.0.12
     deploy:
       resources:
         limits:
@@ -167,7 +270,7 @@ services:
       - '--config.file=/etc/prometheus/blackbox-exporter.yml'
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.11
+        ipv4_address: 172.29.0.13
 
 networks:
   monitor-network:
@@ -179,7 +282,9 @@ networks:
       - subnet: 172.29.0.0/24
 
 volumes:
-  dbdata:
+  mongo1:
+  mongo2:
+  mongo3:
   prometheus:
   grafana:
   cache:
