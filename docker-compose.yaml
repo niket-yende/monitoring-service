@@ -209,35 +209,6 @@ services:
       monitor-network:
         ipv4_address: 172.29.0.9
 
-  # redis:
-  #   image: redis:6.2.6
-  #   container_name: redis
-  #   env_file: ./config/redis/.env
-  #   ports:
-  #     - 6379:6379
-  #   command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
-  #   restart: unless-stopped
-  #   volumes: 
-  #     - cache:/data
-  #   networks:
-  #     monitor-network:
-  #       ipv4_address: 172.29.0.10
-
-  # redis-exporter:
-  #   image: bitnami/redis-exporter
-  #   container_name: redis-exporter
-  #   command:
-  #     - '--redis.addr=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@172.29.0.10:6379'
-  #     - '--include-system-metrics'
-  #   ports:
-  #     - 9121:9121
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - redis
-  #   networks:
-  #     monitor-network:
-  #       ipv4_address: 172.29.0.11
-
   redis1:
     image: redis:6.2.6
     container_name: redis1
