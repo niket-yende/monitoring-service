@@ -103,39 +103,6 @@ services:
       monitor-network:
         ipv4_address: 172.29.0.5
   
-  # mongodb:
-  #   image: mongo:6-jammy
-  #   container_name: mongodb
-  #   hostname: mongodb
-  #   command: mongod --auth --bind_ip_all
-  #   env_file: [./config/mongodb/.env, ./config/mongodb/.env-exporter]
-  #   environment:
-  #     - MONGO_INITDB_ROOT_USERNAME=root
-  #     - MONGO_INITDB_ROOT_PASSWORD=root
-  #   ports:
-  #     - 27017:27017
-  #   volumes:
-  #     - dbdata:/data/db
-  #     - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
-  #   restart: unless-stopped
-  #   networks:
-  #     monitor-network:
-  #       ipv4_address: 172.29.0.2
-
-  # mongodb-exporter:
-  #   image: percona/mongodb_exporter:2.35.0
-  #   container_name: mongodb-exporter
-  #   command:
-  #     - '--mongodb.uri=mongodb://exporter:password@mongodb:27017/admin?ssl=false'
-  #   ports:
-  #     - 9216:9216
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - mongodb
-  #   networks:
-  #     monitor-network:
-  #       ipv4_address: 172.29.0.3
-  
   prometheus:
     image: "prom/prometheus"
     container_name: prometheus
