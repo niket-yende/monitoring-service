@@ -1,6 +1,18 @@
 # monitoring-service
 Project to monitor various services
 
+## Steps:
+1. Start the containers: <br />
+   `docker-compose up -d`
+1. Initialize the mongodb replica set: <br />
+   `docker exec mongodb1 /scripts/rs-init.sh`
+1. Restart the mongodb-exporter: <br />
+   `docker restart mongodb-exporter`
+1. Create a redis cluster: <br />
+   `docker exec -it redis1 redis-cli -a eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81 --cluster create --cluster-replicas 0 172.29.0.10:6379 172.29.0.11:6380 172.29.0.12:6381 --cluster-yes`
+1. Restart the redis-exporter: <br />
+   `docker restart redis-exporter`
+
 ## Start monitoring services
 ```bash
 $ ./start-monitoring.sh
