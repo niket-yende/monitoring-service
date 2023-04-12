@@ -47,3 +47,38 @@ password: admin
 	command: `--mongodb.uri mongodb://exporter:password@mongodb1:27017/admin?replicaSet=rs0&ssl=false&tls=false`
 1. Restart the mongodb-exporter: <br />
 	`docker restart mongodb-exporter`
+1. The exporter only allows single replica set member:
+	```
+   To monitor a MongoDB replica set with the Percona MongoDB exporter, you need to specify a single replica set member in the MONGODB_URI environment variable. The exporter will then discover the other replica set members by querying the replica set configuration.
+   ```
+
+## Steps to monitor redis cluster:
+1. Atleast 3 instances of redis must be added to form a cluster.
+1. Each redis startup command would look like below: <br />
+   `redis-server --port 6379 --cluster-enabled yes --cluster-config-file /data/nodes.conf --cluster-node-timeout 5000 --requirepass $$REDIS_PASSWORD`
+1. Add the redis_exporter_targets in the prometheus.yml file: <br />
+   ```yml
+   - job_name: 'redis_exporter_targets'
+    static_configs:
+      - targets:
+        - redis://redis1:6379
+        - redis://redis2:6380
+        - redis://redis3:6381
+    metrics_path: /scrape
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: redis-exporter:9121
+   ```
+1. Command to create redis cluster after all redis instances are up: <br />
+   `docker exec -it redis1 redis-cli -a eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81 --cluster create --cluster-replicas 0 172.29.0.10:6379 172.29.0.11:6380 172.29.0.12:6381 --cluster-yes`
+1. Restart the redis-exporter: <br />
+   `docker restart redis-exporter`
+1. Check if all redis instances are being monitored: <br />
+   http://localhost:9121/metrics <br />
+	http://localhost:9121/scrape?target=redis1:6379 <br />
+	http://localhost:9121/scrape?target=redis2:6380 <br />
+	http://localhost:9121/scrape?target=redis3:6381 <br />
