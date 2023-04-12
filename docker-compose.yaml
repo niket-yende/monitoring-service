@@ -209,34 +209,95 @@ services:
       monitor-network:
         ipv4_address: 172.29.0.9
 
-  redis:
+  # redis:
+  #   image: redis:6.2.6
+  #   container_name: redis
+  #   env_file: ./config/redis/.env
+  #   ports:
+  #     - 6379:6379
+  #   command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+  #   restart: unless-stopped
+  #   volumes: 
+  #     - cache:/data
+  #   networks:
+  #     monitor-network:
+  #       ipv4_address: 172.29.0.10
+
+  # redis-exporter:
+  #   image: bitnami/redis-exporter
+  #   container_name: redis-exporter
+  #   command:
+  #     - '--redis.addr=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@172.29.0.10:6379'
+  #     - '--include-system-metrics'
+  #   ports:
+  #     - 9121:9121
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - redis
+  #   networks:
+  #     monitor-network:
+  #       ipv4_address: 172.29.0.11
+
+  redis1:
     image: redis:6.2.6
-    container_name: redis
+    container_name: redis1
+    hostname: redis1
     env_file: ./config/redis/.env
     ports:
       - 6379:6379
-    command: /bin/sh -c "redis-server --requirepass $$REDIS_PASSWORD"
+    command: /bin/sh -c "redis-server --port 6379 --cluster-enabled yes --cluster-config-file /data/nodes.conf --cluster-node-timeout 5000 --requirepass $$REDIS_PASSWORD"
     restart: unless-stopped
     volumes: 
-      - cache:/data
+      - cache1:/data
     networks:
       monitor-network:
         ipv4_address: 172.29.0.10
 
+  redis2:
+    image: redis:6.2.6
+    container_name: redis2
+    hostname: redis2
+    env_file: ./config/redis/.env
+    ports:
+      - 6380:6379
+    command: /bin/sh -c "redis-server --port 6380 --cluster-enabled yes --cluster-config-file /data/nodes.conf --cluster-node-timeout 5000 --requirepass $$REDIS_PASSWORD"
+    restart: unless-stopped
+    volumes: 
+      - cache2:/data
+    networks:
+      monitor-network:
+        ipv4_address: 172.29.0.11
+
+  redis3:
+    image: redis:6.2.6
+    container_name: redis3
+    hostname: redis3
+    env_file: ./config/redis/.env
+    ports:
+      - 6381:6379
+    command: /bin/sh -c "redis-server --port 6381 --cluster-enabled yes --cluster-config-file /data/nodes.conf --cluster-node-timeout 5000 --requirepass $$REDIS_PASSWORD"
+    restart: unless-stopped
+    volumes: 
+      - cache3:/data
+    networks:
+      monitor-network:
+        ipv4_address: 172.29.0.12
+
   redis-exporter:
-    image: bitnami/redis-exporter
+    image: oliver006/redis_exporter:v1.20.0
     container_name: redis-exporter
     command:
-      - '--redis.addr=redis://:eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81@172.29.0.10:6379'
+      - '--redis.addr=redis://172.29.0.10:6379'
+      - '--redis.password=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81'
       - '--include-system-metrics'
     ports:
       - 9121:9121
     restart: unless-stopped
     depends_on:
-      - redis
+      - redis1
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.11
+        ipv4_address: 172.29.0.13
 
   cadvisor:
     image: google/cadvisor:latest
@@ -250,7 +311,7 @@ services:
       - 8090:8080/tcp
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.12
+        ipv4_address: 172.29.0.14
     deploy:
       resources:
         limits:
@@ -270,7 +331,7 @@ services:
       - '--config.file=/etc/prometheus/blackbox-exporter.yml'
     networks:
       monitor-network:
-        ipv4_address: 172.29.0.13
+        ipv4_address: 172.29.0.15
 
 networks:
   monitor-network:
@@ -287,5 +348,7 @@ volumes:
   mongo3:
   prometheus:
   grafana:
-  cache:
+  cache1:
+  cache2:
+  cache3:
   alertmanager-data:

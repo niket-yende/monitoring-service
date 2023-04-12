@@ -42,6 +42,23 @@ scrape_configs:
     static_configs:
       - targets: ['redis-exporter:9121']
 
+  ## config for the multiple Redis targets that the exporter will scrape
+  # Reference: https://github.com/oliver006/redis_exporter#prometheus-configuration-to-scrape-multiple-redis-hosts
+  - job_name: 'redis_exporter_targets'
+    static_configs:
+      - targets:
+        - redis://redis1:6379
+        - redis://redis2:6380
+        - redis://redis3:6381
+    metrics_path: /scrape
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: redis-exporter:9121
+
   - job_name: "website-monitoring-http"
     metrics_path: /probe
     params:
